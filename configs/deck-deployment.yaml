@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deck
+  name: deck
+  namespace: prow
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: deck
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: deck
+    spec:
+      containers:
+      - args:
+        - --config-path=/etc/config/config.yaml
+        - --plugin-config=/etc/plugins/plugins.yaml
+        - --tide-url=http://tide/
+        - --hook-url=http://hook:8888/plugin-help
+        - --github-endpoint=http://ghproxy
+        - --github-endpoint=https://api.github.com
+        - --github-graphql-endpoint=http://ghproxy/graphql
+        - --s3-credentials-file=/etc/s3-credentials/service-account.json
+        - --spyglass=true
+        - --github-app-id=$(GITHUB_APP_ID)
+        - --github-app-private-key-path=/etc/github/cert
+        env:
+        - name: GITHUB_APP_ID
+          valueFrom:
+            secretKeyRef:
+              key: appid
+              name: exe-prow-github-app-github-token
+        image: gcr.io/k8s-prow/deck:v20220818-6dcd812eb2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: deck
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz/ready
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 600
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/config
+          name: config
+          readOnly: true
+        - mountPath: /etc/github
+          name: github-token
+          readOnly: true
+        - mountPath: /etc/plugins
+          name: plugins
+          readOnly: true
+        - mountPath: /etc/s3-credentials
+          name: s3-credentials
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: deck
+      serviceAccountName: deck
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: exe-prow-github-app-config
+        name: config
+      - name: github-token
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-github-token
+      - configMap:
+          defaultMode: 420
+          name: exe-prow-github-app-plugins
+        name: plugins
+      - name: s3-credentials
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-s3-credentials

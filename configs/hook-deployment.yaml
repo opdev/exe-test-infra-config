@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hook
+  name: hook
+  namespace: prow
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: hook
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: hook
+    spec:
+      containers:
+      - args:
+        - --dry-run=false
+        - --config-path=/etc/config/config.yaml
+        - --github-endpoint=http://ghproxy
+        - --github-endpoint=https://api.github.com
+        - --github-app-id=$(GITHUB_APP_ID)
+        - --github-app-private-key-path=/etc/github/cert
+        env:
+        - name: GITHUB_APP_ID
+          valueFrom:
+            secretKeyRef:
+              key: appid
+              name: exe-prow-github-app-github-token
+        image: gcr.io/k8s-prow/hook:v20220818-6dcd812eb2
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: hook
+        ports:
+        - containerPort: 8888
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz/ready
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 600
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/webhook
+          name: hmac
+          readOnly: true
+        - mountPath: /etc/github
+          name: github-token
+          readOnly: true
+        - mountPath: /etc/config
+          name: config
+          readOnly: true
+        - mountPath: /etc/plugins
+          name: plugins
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: hook
+      serviceAccountName: hook
+      terminationGracePeriodSeconds: 180
+      volumes:
+      - name: hmac
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-hmac-token
+      - name: github-token
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-github-token
+      - configMap:
+          defaultMode: 420
+          name: exe-prow-github-app-config
+        name: config
+      - configMap:
+          defaultMode: 420
+          name: exe-prow-github-app-plugins
+        name: plugins

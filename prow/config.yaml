@@ -1,0 +1,94 @@
+prowjob_namespace: prow
+pod_namespace: test-pods
+log_level: debug
+
+in_repo_config:
+  enabled:
+    "*": true
+  allowed_clusters:
+    "*": ["default"]
+
+deck:
+ spyglass:
+   size_limit: 500000000 # 500MB
+   lenses:
+   - lens:
+       name: metadata
+     required_files:
+     - started.json|finished.json
+   - lens:
+       config:
+       name: buildlog
+     required_files:
+     - build-log.txt
+   - lens:
+       name: junit
+     required_files:
+     - .*/junit.*\.xml
+   - lens:
+       name: podinfo
+     required_files:
+     - podinfo.json
+
+plank:
+  job_url_template: 'https://prow.apps.eng.opdev.io/view/prow-logs/{{if eq .Spec.Type "presubmit"}}pr-logs/pull{{else if eq .Spec.Type "batch"}}pr-logs/pull{{else}}logs{{end}}{{if .Spec.Refs}}{{if ne .Spec.Refs.Org ""}}/{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}{{end}}{{end}}{{if eq .Spec.Type "presubmit"}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}{{else if eq .Spec.Type "batch"}}/batch{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}/'
+  job_url_prefix_config:
+    "*": https://prow.apps.eng.opdev.io/view/
+  pod_pending_timeout: 10m
+  report_templates:
+    '*': >-
+        [Full PR test history](https://prow.apps.eng.opdev.io/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).
+        [Your PR dashboard](https://prow.apps.eng.opdev.io/pr?query=is:pr+state:open+author:{{with
+        index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
+  default_decoration_configs:
+    "*":
+      timeout: 2h
+      gcs_configuration:
+        bucket: s3://prow-logs
+        path_strategy: explicit
+      s3_credentials_secret: exe-prow-github-app-s3-credentials
+      utility_images:
+        clonerefs: "gcr.io/k8s-prow/clonerefs:v20220831-a90f89ba44"
+        initupload: "gcr.io/k8s-prow/initupload:v20220831-a90f89ba44"
+        entrypoint: "gcr.io/k8s-prow/entrypoint:v20220831-a90f89ba44"
+        sidecar: "gcr.io/k8s-prow/sidecar:v20220831-a90f89ba44"
+      ssh_key_secrets:
+      - exe-prow-github-app-ssh-key
+
+tide:
+  sync_period: 2m
+  queries:
+  - labels:
+    - lgtm
+    - approved
+    missingLabels:
+    - needs-rebase
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - do-not-merge/invalid-owners-file
+    orgs:
+    - opdev
+  pr_status_base_urls:
+    '*': https://prow.apps.eng.opdev.io/pr
+  context_options:
+    from-branch-protection: false
+    skip-unknown-contexts: true
+
+branch-protection:
+  protect: true
+  enforce_admins: true
+  allow_deletions: false
+  required_pull_request_reviews:
+    required_approving_review_count: 2
+  orgs:
+    opdev:
+      required_status_checks:
+        contexts: ["tide"]
+
+sinker:
+  resync_period: 1m
+  max_prowjob_age: 48h
+  max_pod_age: 48h
+  terminated_pod_ttl: 10m
+
+decorate_all_jobs: true

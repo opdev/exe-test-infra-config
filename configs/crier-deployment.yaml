@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: crier
+  name: crier
+  namespace: prow
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: crier
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: crier
+    spec:
+      containers:
+      - args:
+        - --blob-storage-workers=10
+        - --config-path=/etc/config/config.yaml
+        - --s3-credentials-file=/etc/s3-credentials/service-account.json
+        - --github-endpoint=http://ghproxy
+        - --github-endpoint=https://api.github.com
+        - --github-workers=10
+        - --kubernetes-blob-storage-workers=10
+        - --github-app-id=$(GITHUB_APP_ID)
+        - --github-app-private-key-path=/etc/github/cert
+        env:
+        - name: GITHUB_APP_ID
+          valueFrom:
+            secretKeyRef:
+              key: appid
+              name: exe-prow-github-app-github-token
+        image: gcr.io/k8s-prow/crier:v20220818-6dcd812eb2
+        imagePullPolicy: IfNotPresent
+        name: crier
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/config
+          name: config
+          readOnly: true
+        - mountPath: /etc/github
+          name: github-token
+          readOnly: true
+        - mountPath: /etc/s3-credentials
+          name: s3-credentials
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: crier
+      serviceAccountName: crier
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: exe-prow-github-app-config
+        name: config
+      - name: github-token
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-github-token
+      - name: s3-credentials
+        secret:
+          defaultMode: 420
+          secretName: exe-prow-github-app-s3-credentials

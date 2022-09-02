@@ -1,0 +1,75 @@
+plugins:
+  opdev:
+    plugins:
+    - approve
+    - assign
+    - blockade
+    - blunderbuss
+    - branchcleaner
+    - buildifier
+    - cherrypickunapproved
+    - golint
+    - help
+    - hold
+    - label
+    - lgtm
+    - lifecycle
+    - mergemethodcomment
+    - mergecommitblocker
+    - milestone
+    - milestoneapplier
+    - milestonestatus
+    - override
+    - owners-label
+    - ownersconfig
+    - project
+    - projectmanager
+    - releasenote
+    - require-matching-label
+    - retitle
+    - size
+    - skip
+    - stage
+    - testfreeze
+    - transfer-issue
+    - trigger
+    - updateconfig
+    - verify-owners
+    - wip
+
+external_plugins:
+  opdev:
+    - name: needs-rebase
+      events:
+      - pull_request
+      - issue_comment
+
+config_updater:
+  maps:
+    label_sync/labels.yaml:
+      name: exe-prow-github-app-labels
+      clusters:
+        test-infra-trusted:
+          - test-pods
+    config/prow/config.yaml:
+      name: exe-prow-github-app-config
+      clusters:
+        test-infra-trusted:
+          - default
+    config/prow/plugins.yaml:
+      name: exe-prow-github-app-plugins
+      clusters:
+        test-infra-trusted:
+          - default
+    config/jobs/**/*.{yaml,yml}:
+      name: job-config
+      gzip: true
+      clusters:
+        test-infra-trusted:
+          - default
+    experiment/test-configmap.txt:
+      name: test-configmap
+      gzip: true
+      clusters:
+        test-infra-trusted:
+          - default

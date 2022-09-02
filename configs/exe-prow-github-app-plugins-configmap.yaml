@@ -1,0 +1,51 @@
+apiVersion: v1
+data:
+  plugins.yaml: |
+    external_plugins:
+      opdev:
+        - name: needs-rebase
+          events:
+          - pull_request
+          - issue_comment
+    plugins:
+      opdev:
+        plugins:
+        - approve
+        - assign
+        - blockade
+        - blunderbuss
+        - branchcleaner
+        - buildifier
+        - cherrypickunapproved
+        - golint
+        - help
+        - hold
+        - label
+        - lgtm
+        - lifecycle
+        - mergemethodcomment
+        - mergecommitblocker
+        - milestone
+        - milestoneapplier
+        - milestonestatus
+        - override
+        - owners-label
+        - ownersconfig
+        - project
+        - projectmanager
+        - releasenote
+        - require-matching-label
+        - retitle
+        - size
+        - skip
+        - stage
+        - testfreeze
+        - transfer-issue
+        - trigger
+        - updateconfig
+        - verify-owners
+        - wip
+kind: ConfigMap
+metadata:
+  name: exe-prow-github-app-plugins
+  namespace: prow

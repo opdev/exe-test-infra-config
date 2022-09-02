@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-12-15T15:37:29Z"
+  name: needs-rebase
+  namespace: prow
+  resourceVersion: "4519072"
+  uid: a23dd2da-206a-46d9-a66e-57e87346f060
+spec:
+  clusterIP: 172.30.87.237
+  clusterIPs:
+  - 172.30.87.237
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - nodePort: 30230
+    port: 80
+    protocol: TCP
+    targetPort: 8888
+  selector:
+    app: needs-rebase
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
