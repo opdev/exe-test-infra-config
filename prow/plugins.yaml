@@ -7,24 +7,24 @@ plugins:
     - blunderbuss
     - branchcleaner
     - buildifier
-    - cherrypickunapproved
+    - cherry-pick-unapproved
+    - config-updater
     - golint
     - help
     - hold
     - label
     - lgtm
     - lifecycle
-    - mergemethodcomment
+    - merge-method-comment
     - mergecommitblocker
     - milestone
     - milestoneapplier
     - milestonestatus
     - override
     - owners-label
-    - ownersconfig
     - project
-    - projectmanager
-    - releasenote
+    - project-manager
+    - release-note
     - require-matching-label
     - retitle
     - size
@@ -33,7 +33,6 @@ plugins:
     - testfreeze
     - transfer-issue
     - trigger
-    - updateconfig
     - verify-owners
     - wip
 

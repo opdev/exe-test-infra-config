@@ -47,7 +47,7 @@ presubmits:
       - checkconfig
       args:
       - --config-path=prow/config.yaml
-      - --job-config-path=prow/cluster/jobs
+      - --job-config-path=prow/jobs
       - --plugin-config=prow/plugins.yaml
       - --prow-yaml-repo-name=$(REPO_OWNER)/$(REPO_NAME)
       - --strict
@@ -56,4 +56,4 @@ presubmits:
       - --exclude-warning=long-job-names
 
 postsubmits:
-# comment to trigger
+# trigger comment
